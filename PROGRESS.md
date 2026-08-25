@@ -25,19 +25,27 @@ todo-list/
 - [x] 檢查本機開發環境（Java 21、Node 24、npm 11、Docker 29 均已就緒；PATH 中無 mvn，改用 IntelliJ 內建 Maven 或 Maven Wrapper）
 - [x] 建立 PROMPT.md / PROGRESS.md 規劃文件
 - [x] 確認 Spring Boot 版本 → 4.1.1（backend/pom.xml 已產生，Java 21，與預設假設相符）
-- [x] 初始化 git repository（`git status` 顯示已在 branch master，但尚無任何 commit）
+- [x] 初始化 git repository
 - [x] 確認前端語言 → **TypeScript**（使用者已於 PROMPT.md 更新）
 - [x] 補上根目錄 `.gitignore`（涵蓋 Maven target/、Node node_modules・dist、.env、IDE、OS、log 檔）
-- [ ] 建立第一個 git commit（目前為 untracked 狀態：PROGRESS.md、PROMPT.md、.gitignore、backend/）
+- [x] 建立第一個 git commit（`c00442b Project init`，working tree 乾淨）
+- [x] 本地與遠端分支統一為 `main`（GitHub 預設分支已改為 main，遠端舊 master 已刪除，origin: `github.com/csc0803/todo-list`）
 
 > 註：backend/ 骨架已存在（Spring Boot 4.1.1、groupId `com.chun`、artifactId `backend`，套件路徑 `com.chun.backend`），推測是使用者已自行透過 Spring Initializr 產生，與 PROMPT.md 原規劃的 `com.example` / `todolist` 命名不同。此為 Phase 1 的工作提前完成，細節將在確認命名後同步更新 Phase 1 清單。
 
 ## Phase 1：後端骨架建立
-- [ ] 用 Spring Initializr 產生 backend/ 專案（依賴：Web、Data JPA、MySQL Driver、Validation、Lombok）
-- [ ] 確認專案可用 Maven（或 wrapper）成功編譯（`mvn clean compile`）
-- [ ] 設定 `application.yml`：資料庫連線資訊改用環境變數/預留位置，避免寫死密碼
-- [ ] 建立 `docker-compose.yml`（MySQL 服務、volume、初始 database 名稱、帳密）
-- [ ] 啟動 MySQL container 並確認後端可連線
+- [x] 用 Spring Initializr 產生 backend/ 專案（已存在：groupId `com.chun`、artifactId `backend`，Spring Boot 4.1.1，依賴含 Web、Data JPA、Validation、MySQL Driver、Lombok）
+- [x] 確認專案可用 Maven（或 wrapper）成功編譯（`.\mvnw.cmd clean compile` → BUILD SUCCESS）
+- [x] 建立 DB script（`db/01-init.sql`）：建立 `tododb` database、`todo` table，並建立專用 app 帳號 `todolist`（僅 SELECT/INSERT/UPDATE/DELETE，不含 DDL 權限，不用 root 連線），已用本機 MySQL 實際執行驗證通過（`SHOW TABLES` / `DESCRIBE todo` 結構正確）
+- [x] 設定 `application.yml`：資料庫連線資訊避免寫死密碼，改用 Spring profile 機制隔離機密設定。最終採用方案：
+  - `application.yaml`（進 git）：只放非機密設定（URL、username、driver-class-name），指向本機 MySQL `localhost:3306`
+  - `application-local.yaml.example`（進 git）：範本檔，標示要複製的欄位（目前僅 `spring.datasource.password`）
+  - `application-local.yaml`（`.gitignore` 排除，實際生效檔）：放本機真實密碼
+  - IntelliJ Run Configuration 的 **Active profiles** 欄位設為 `local`，啟動時自動套用上述 override
+  - 過程中曾嘗試環境變數（`${DB_PASSWORD}` + IntelliJ 手動填 env var）與 EnvFile plugin 兩種方案，後改用上述 profile 方式，不依賴 IDE plugin，`mvn spring-boot:run` / CI 也能一致運作
+- [x] **本地端連線測試**：透過 IntelliJ（`Active profiles=local`）啟動後端，成功連上本機 MySQL、無連線錯誤
+- [x] 建立 `docker-compose.yml`（MySQL 服務、named volume `mysql-data`、掛載 `./db` 做初始化、healthcheck）。本機原生 MySQL 已佔用 3306，改對外開 3307（`localhost:3307`）避免衝突。已用 `docker compose up -d` 驗證：container 顯示 `healthy`，init script 有正確執行
+- [x] 把 `application.yml` 的連線目標切換回 docker 版 MySQL，啟動 MySQL container 並確認後端可連線：新增 `application-docker.yaml`（url 指向 `localhost:3307`、密碼 `todolist_local_dev_only`，跟 `db/01-init.sql` 一致，內容非個人機密可直接進 git），IntelliJ Active profiles 切成 `docker`，實測連線成功
 
 ## Phase 2：後端資料層
 - [ ] 建立 `Todo` entity（id, title, description, completed, createdAt, updatedAt）
