@@ -48,10 +48,10 @@ todo-list/
 - [x] 把 `application.yml` 的連線目標切換回 docker 版 MySQL，啟動 MySQL container 並確認後端可連線：新增 `application-docker.yaml`（url 指向 `localhost:3307`、密碼 `todolist_local_dev_only`，跟 `db/01-init.sql` 一致，內容非個人機密可直接進 git），IntelliJ Active profiles 切成 `docker`，實測連線成功
 
 ## Phase 2：後端資料層
-- [ ] 建立 `Todo` entity（id, title, description, completed, createdAt, updatedAt）
-- [ ] 建立 `TodoRepository`（extends JpaRepository）
-- [ ] 設定 `spring.jpa.hibernate.ddl-auto`（開發階段用 update，並記錄之後正式環境應改用 migration 工具如 Flyway）
-- [ ] 驗證資料表可自動建立於 MySQL
+- [x] 建立 `Todo` entity（id, title, description, completed, createdAt, updatedAt）：`com.chun.backend.entity.Todo`，用 Lombok `@Getter @Setter`，`@Table(name = "todo")` 明確對應 table 名稱，`description` 用 `@Column(columnDefinition = "TEXT")`（原本用 `@Lob` 在 MySQL 上會被 Hibernate 推斷成 `tinytext`，跟 SQL script 建的 `TEXT` 對不上，已修正）。`@PrePersist`/`@PreUpdate` 自動補 `createdAt`/`updatedAt`/`completed` 預設值，避免存檔時 NOT NULL 欄位為 null
+- [x] 建立 `TodoRepository`（extends JpaRepository）：`JpaRepository<Todo, Long>`（曾誤寫成 `JpaRepository<Integer, Todo>`，泛型參數順序相反且型別錯誤，已修正）
+- [x] 設定 `spring.jpa.hibernate.ddl-auto`：改採 **`validate`**（非原計畫的 `update`），統一放在 base `application.yaml`、`local`/`docker` profile 共用。理由：schema 已有 `db/01-init.sql` 當唯一事實來源，`validate` 只檢查 entity 與現有 DB 是否一致、不會自動改表，避免 schema 分岔；未來若導入 Flyway/Liquibase 再視情況調整
+- [x] 驗證資料表對應正確：以 `docker` profile 實際啟動一次（`mvn spring-boot:run`），Hibernate `validate` 通過（過程中先抓到並修正上述 `description` 型別不符的問題），確認 entity 與既有 `todo` table 完全對應
 
 ## Phase 3：後端 API 層
 - [ ] 建立 `TodoController`，實作 REST API：
