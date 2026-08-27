@@ -1,9 +1,9 @@
 # 專案進度 (PROGRESS)
 
-最後更新：2026-08-24
+最後更新：2026-08-27
 
 ## 目前狀態
-規劃階段。技術棧與核心決策已確認，完整分階段計畫如下，尚未開始建立專案骨架。
+Phase 0～3 已完成（環境準備、後端骨架、資料層、API 層）。後端 CRUD API 已可用，6 個 endpoint 皆手動測試通過。下一步進入 Phase 4（後端測試）或 Phase 5（前端骨架）。
 
 ## 專案結構（規劃）
 ```
@@ -54,18 +54,23 @@ todo-list/
 - [x] 驗證資料表對應正確：以 `docker` profile 實際啟動一次（`mvn spring-boot:run`），Hibernate `validate` 通過（過程中先抓到並修正上述 `description` 型別不符的問題），確認 entity 與既有 `todo` table 完全對應
 
 ## Phase 3：後端 API 層
-- [ ] 建立 `TodoController`，實作 REST API：
-  - [ ] `GET /api/todos`（查全部，支援依 completed 篩選，可選）
-  - [ ] `GET /api/todos/{id}`（查單筆）
-  - [ ] `POST /api/todos`（新增）
-  - [ ] `PUT /api/todos/{id}`（更新）
-  - [ ] `PATCH /api/todos/{id}/toggle`（切換完成狀態）
-  - [ ] `DELETE /api/todos/{id}`（刪除）
-- [ ] 建立 `TodoService`（商業邏輯與 Repository 之間的中介層）
-- [ ] 加入輸入驗證（title 不可為空、長度限制等，使用 `@Valid`）
-- [ ] 建立統一錯誤處理（`@ControllerAdvice`，404 / 400 回應格式一致）
-- [ ] 設定 CORS，允許前端開發伺服器（例如 http://localhost:5173）呼叫 API
-- [ ] 手動用 curl / Postman 測試所有 API 端點
+- [x] 建立 `TodoService`（`com.chun.backend.service.TodoService` interface + `TodoServiceImpl`）：`getAllTodos()` / `getAllTodos(Boolean completed)` / `getTodoById` / `createTodo` / `updateTodo` / `toggleCompleted` / `deleteTodo`。查無資料統一丟 `TodoNotFoundException`（`com.chun.backend.exception`），不在 Service 內處理 HTTP status
+  - 過程中修正兩個問題：`@Service` 一開始誤放在 interface 上（應放在 `TodoServiceImpl`）；`updateTodo`/`toggleCompleted` 曾用 try-catch 把 `TodoNotFoundException` 包成普通 `RuntimeException`，導致之後 `@ExceptionHandler` 抓不到型別，已移除該 try-catch
+- [x] 建立 `TodoController`，實作 REST API：
+  - [x] `GET /api/todos`（查全部，`?completed=true/false` 可選篩選）
+  - [x] `GET /api/todos/{id}`（查單筆）
+  - [x] `POST /api/todos`（新增）
+  - [x] `PUT /api/todos/{id}`（更新）
+  - [x] `PATCH /api/todos/{id}/toggle`（切換完成狀態）
+  - [x] `DELETE /api/todos/{id}`（刪除）
+- [x] 加入輸入驗證（`@Valid` + entity 上的 Bean Validation annotation）
+- [x] 建立統一錯誤處理：`GlobalExceptionHandler`（`@RestControllerAdvice`），攔截 `TodoNotFoundException` → 404、`MethodArgumentNotValidException` → 400，統一回傳 `{timestamp, status, error, message}` 格式
+- [x] 設定 CORS：`CorsConfig`（`WebMvcConfigurer`），允許 `http://localhost:5173` 呼叫 `/api/**`
+- [x] 加入 Swagger（`springdoc-openapi-starter-webmvc-ui` 3.0.3，對應 Spring Boot 4 / Spring Framework 7），取代手動 curl/Postman 測試。啟動後可在 `http://localhost:8080/swagger-ui/index.html` 互動測試所有 endpoint
+- [x] 手動測試所有 API 端點（用 curl 對已啟動的後端逐一驗證），過程中發現並修正兩個 entity 層的 bug：
+  - `Todo` entity 的 `completed`/`createdAt`/`updatedAt` 原本標了 `@NotNull`，但 `@Valid` 驗證在 `@PrePersist` 自動補值**之前**就執行，導致 `POST`/`PUT` 若不手動帶這三個欄位會被擋在 400；也連帶讓 `PUT /api/todos/{不存在的id}` 因為先卡在驗證，永遠拿不到預期的 404。已移除這三個欄位的 `@NotNull`（DB 端 `NOT NULL` + `@ColumnDefault` 已足夠保證非空，`@PrePersist`/`@PreUpdate` 保證存檔前一定有值）
+  - `title` 原本只有 `@NotNull` + `@Size(max=100)`，擋不住空字串／純空白字串。已改成 `@NotBlank` + `@Size(max=100)`
+  - 修正後重測：`POST`（僅帶 title/description）、`PUT`（含對不存在 id 回 404）、`PATCH toggle`、`DELETE`、`GET`（含 404）、驗證邊界情況（空 title / 純空白 title / 缺 title）全部通過
 
 ## Phase 4：後端測試
 - [ ] Repository 層測試（`@DataJpaTest`，可選用 H2 in-memory DB 加速）
@@ -127,8 +132,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] 確認 Phase 0 剩餘兩項決策（前端語言、Spring Boot 版本），或直接採用預設值開始 Phase 1
+- [ ] 決定 Phase 4（後端測試）跟 Phase 5（前端骨架）先做哪個，或兩者並行
 
 ## 備註
-- 目前工作目錄尚未初始化為 git repository。
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。

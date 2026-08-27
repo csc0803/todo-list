@@ -1,7 +1,7 @@
 package com.chun.backend.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,17 +15,14 @@ import java.time.Instant;
 @Setter
 public class Todo {
 
-    @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @NotNull
     @ColumnDefault("0")
     @Column(name = "completed", nullable = false)
     private Boolean completed;
@@ -34,7 +31,7 @@ public class Todo {
     private String description;
 
     @Size(max = 100)
-    @NotNull
+    @NotBlank
     @Column(name = "title", nullable = false, length = 100)
     private String title;
 
