@@ -1,9 +1,9 @@
 # 專案進度 (PROGRESS)
 
-最後更新：2026-08-27
+最後更新：2026-08-31
 
 ## 目前狀態
-Phase 0～3 已完成（環境準備、後端骨架、資料層、API 層）。後端 CRUD API 已可用，6 個 endpoint 皆手動測試通過。下一步進入 Phase 4（後端測試）或 Phase 5（前端骨架）。
+Phase 0～4 已完成（環境準備、後端骨架、資料層、API 層、後端測試）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS）。下一步進入 Phase 5（前端骨架）。
 
 ## 專案結構（規劃）
 ```
@@ -73,9 +73,9 @@ todo-list/
   - 修正後重測：`POST`（僅帶 title/description）、`PUT`（含對不存在 id 回 404）、`PATCH toggle`、`DELETE`、`GET`（含 404）、驗證邊界情況（空 title / 純空白 title / 缺 title）全部通過
 
 ## Phase 4：後端測試
-- [ ] Repository 層測試（`@DataJpaTest`，可選用 H2 in-memory DB 加速）
-- [ ] Controller 層測試（`@WebMvcTest` + MockMvc，涵蓋成功與錯誤情境）
-- [ ] 確認 `mvn test` 全數通過
+- [x] Repository 層測試（`@DataJpaTest` + H2 in-memory DB，`application-test.yaml` 設定 `jdbc:h2:mem:tododb;MODE=MySQL`、`ddl-auto=create-drop`）：`TodoRepositoryTest`，11 個測試，涵蓋 save（含 `@PrePersist` 預設值、`@NotBlank`/`@Size` 違反）、findById（含清 persistence context 重查、查無資料）、findAll、update（含 `createdAt` 不變/`updatedAt` 有更新）、findAllByCompleted、deleteById（含刪不存在的 id 靜默跳過）
+- [x] Controller 層測試（`@WebMvcTest` + MockMvc + `@MockitoBean` mock `TodoService`）：`TodoControllerTest`，16 個測試，涵蓋 6 個 endpoint 的成功案例、404（mock service 丟 `TodoNotFoundException`）、400（bean validation 失敗、JSON 格式壞掉、缺必填欄位），並用 `verify`/`verifyNoMoreInteractions`/`verifyNoInteractions` 確認 Controller 與 Service 的互動（驗證失敗時不該呼叫 Service，找不到 id 時該呼叫 Service 一次）
+- [x] 確認 `mvn test` 全數通過：修正 Spring Initializr 預設產生的 `BackendApplicationTests`（`@SpringBootTest` 沒指定 profile，會套用預設 `application.yaml` 連本機真實 MySQL，環境沒開 DB 就會 context load 失敗）→ 補上 `@ActiveProfiles("test")`，比照 Repository 測試改走 H2。全數 28 個測試（11 + 16 + 1）通過
 
 ## Phase 5：前端骨架建立
 - [ ] 用 Vite 建立 frontend/ 專案（React + 選定語言）
@@ -132,7 +132,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] 決定 Phase 4（後端測試）跟 Phase 5（前端骨架）先做哪個，或兩者並行
+- [ ] 開始 Phase 5：用 Vite 建立 frontend/ 專案
 
 ## 備註
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。
