@@ -3,7 +3,7 @@
 最後更新：2026-08-31
 
 ## 目前狀態
-Phase 0～4 已完成（環境準備、後端骨架、資料層、API 層、後端測試）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS）。下一步進入 Phase 5（前端骨架）。
+Phase 0～5 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS）。前端 Vite + React + TypeScript 專案已建立，`npm run dev` 可正常啟動。下一步進入 Phase 6（前端 UI 元件）。
 
 ## 專案結構（規劃）
 ```
@@ -78,10 +78,10 @@ todo-list/
 - [x] 確認 `mvn test` 全數通過：修正 Spring Initializr 預設產生的 `BackendApplicationTests`（`@SpringBootTest` 沒指定 profile，會套用預設 `application.yaml` 連本機真實 MySQL，環境沒開 DB 就會 context load 失敗）→ 補上 `@ActiveProfiles("test")`，比照 Repository 測試改走 H2。全數 28 個測試（11 + 16 + 1）通過
 
 ## Phase 5：前端骨架建立
-- [ ] 用 Vite 建立 frontend/ 專案（React + 選定語言）
-- [ ] 確認 `npm install` / `npm run dev` 可正常啟動
-- [ ] 建立基本目錄結構（components/、api/、hooks/ 或依實際需求調整）
-- [ ] 設定 `.env` / `.env.example`（`VITE_API_BASE_URL`）
+- [x] 用 Vite 建立 frontend/ 專案（`npm create vite@latest frontend -- --template react-ts`，React 19 + TypeScript）
+- [x] 確認 `npm install` / `npm run dev` 可正常啟動：`node_modules` 已安裝，實測 `npm run dev` 330ms 內啟動，`http://localhost:5180/` 正常回應
+- [x] 建立基本目錄結構：`src/api`、`src/components`、`src/hooks`
+- [x] 設定 `.env` / `.env.example`：皆為 `VITE_API_BASE_URL=http://localhost:8080`。`.env` 已被根目錄 `.gitignore` 的 `.env` 規則排除（不進 git，該規則對所有子目錄深度皆生效），`.env.example` 進 git 當範本
 
 ## Phase 6：前端 UI 元件
 - [ ] `TodoList`：顯示所有 todo
@@ -132,7 +132,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] 開始 Phase 5：用 Vite 建立 frontend/ 專案
+- [ ] 開始 Phase 6：建立 `TodoList`、`TodoItem`、`AddTodoForm` 等前端 UI 元件
 
 ## 備註
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。
