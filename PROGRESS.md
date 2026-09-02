@@ -1,9 +1,9 @@
 # 專案進度 (PROGRESS)
 
-最後更新：2026-08-31
+最後更新：2026-09-02
 
 ## 目前狀態
-Phase 0～5 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS）。前端 Vite + React + TypeScript 專案已建立，`npm run dev` 可正常啟動。下一步進入 Phase 6（前端 UI 元件）。
+Phase 0～6 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已有 `TodoList`/`TodoItem`/`AddTodoForm` 三個元件，含新增、切換完成、行內編輯、刪除、空狀態，樣式採 Bootstrap 5，`App.tsx` 用本地 `useState` 管理 todos（尚未接後端 API）。下一步進入 Phase 7（前端 API 串接）。
 
 ## 專案結構（規劃）
 ```
@@ -83,13 +83,15 @@ todo-list/
 - [x] 建立基本目錄結構：`src/api`、`src/components`、`src/hooks`
 - [x] 設定 `.env` / `.env.example`：皆為 `VITE_API_BASE_URL=http://localhost:8080`。`.env` 已被根目錄 `.gitignore` 的 `.env` 規則排除（不進 git，該規則對所有子目錄深度皆生效），`.env.example` 進 git 當範本
 
-## Phase 6：前端 UI 元件
-- [ ] `TodoList`：顯示所有 todo
-- [ ] `TodoItem`：單筆項目（checkbox 切換完成、標題、刪除按鈕）
-- [ ] `AddTodoForm`：新增 todo 的輸入表單
-- [ ] 編輯功能（點擊標題進入編輯模式，儲存/取消）
-- [ ] 空狀態（無 todo 時的提示畫面）
-- [ ] 基本樣式（CSS，簡潔可用即可，不追求視覺設計）
+## Phase 6：前端 UI 元件（已完成）
+- [x] `TodoList`：顯示所有 todo（`src/components/TodoList.tsx`，純顯示元件，`todos` 由外部傳入，本身不 fetch 資料，`onToggle`/`onDelete`/`onUpdate` 回呼往上層傳）。原本 `.map()` 內 `<TodoItem />` 後面多了一個分號（`/>;`）導致編譯不過，已修掉
+- [x] `TodoItem`：單筆項目（checkbox 切換完成、標題、刪除按鈕）（`src/components/TodoItem.tsx`，checkbox 為 controlled component，直接綁 `todo.completed`，不自己維護 local state，避免跟未來接上的 API 狀態不同步）
+- [x] `AddTodoForm`：新增 todo 的輸入表單（`src/components/AddTodoForm.tsx`）。`useState` 管理輸入中的 title、送出時 `trim()` + 檢查非空、呼叫 `onAdd(title)`、送出後清空欄位。初版有兩個小 bug：`<input>` 沒接 `value`/`onChange`（變成 uncontrolled）、按鈕是 `type="button"` 導致點了不會觸發 `onSubmit`，加上漏寫 `export default`，皆已修正
+- [x] 編輯功能（點擊標題進入編輯模式，儲存/取消）— 依討論的設計方向實作：不與 `AddTodoForm` 共用，在 `TodoItem` 內自建 `isEditing`/`editValue` local state 做行內編輯。點標題（非編輯中）切換成 `<input>`，「儲存」`trim()` 後非空才呼叫 `onUpdate(id, title)` 並結束編輯模式，「取消」還原成 `todo.title` 並結束編輯模式
+- [x] 空狀態（無 todo 時的提示畫面）— 已包在 `TodoList` 內處理（`todos.length === 0` 時顯示「目前沒有待辦事項」）
+- [x] 基本樣式 — 改用 **Bootstrap 5**（`npm install bootstrap`，`main.tsx` 引入 `bootstrap/dist/css/bootstrap.min.css`），而非原計畫的手刻 CSS：`App.css`/`index.css` 已清空 Vite 預設樣式並保持空白，元件改用 Bootstrap class（`list-group`/`list-group-item`、`form-control`/`form-check-input`、`btn btn-primary`/`btn-outline-danger` 等）
+
+> 註：`TodoList`/`TodoItem`/`AddTodoForm` 已接進 `App.tsx`：`App` 用 `useState<Todo[]>` 管理本地 todos 清單，`handleAdd`/`handleToggle`/`handleDelete`/`handleUpdate` 對應傳給三個元件。這是暫時的本地 state，尚未呼叫後端 API（那是 Phase 7 的範圍）。`src/api/types.ts` 已建立 `Todo` 型別定義（尚未有實際 fetch 邏輯）。`tsc -b --noEmit` 已驗證無型別錯誤，`vite build` 可正常打包。
 
 ## Phase 7：前端 API 串接
 - [ ] 建立 API service 模組（封裝 fetch，統一處理 base URL 與錯誤）
@@ -132,7 +134,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] 開始 Phase 6：建立 `TodoList`、`TodoItem`、`AddTodoForm` 等前端 UI 元件
+- [ ] 開始 Phase 7：建立 API service 模組，將前端串接後端 `/api/todos`
 
 ## 備註
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。
