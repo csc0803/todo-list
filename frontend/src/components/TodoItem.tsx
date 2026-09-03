@@ -5,7 +5,7 @@ interface TodoItemProps {
   todo: Todo;
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
-  onUpdate: (id: number, title: string) => void;
+  onUpdate: (id: number, title: string, description: string, completed: boolean) => void;
 }
 
 function TodoItem({todo, onToggle, onDelete, onUpdate}: TodoItemProps){
@@ -20,7 +20,7 @@ function TodoItem({todo, onToggle, onDelete, onUpdate}: TodoItemProps){
     function handleSave() {
         const trimmed = editValue.trim();
         if (!trimmed) return;
-        onUpdate(todo.id, trimmed);
+        onUpdate(todo.id, trimmed, todo.description, todo.completed);
         setIsEditing(false);
     }
 

@@ -1,9 +1,9 @@
 # 專案進度 (PROGRESS)
 
-最後更新：2026-09-02
+最後更新：2026-09-03
 
 ## 目前狀態
-Phase 0～6 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已有 `TodoList`/`TodoItem`/`AddTodoForm` 三個元件，含新增、切換完成、行內編輯、刪除、空狀態，樣式採 Bootstrap 5，`App.tsx` 用本地 `useState` 管理 todos（尚未接後端 API）。下一步進入 Phase 7（前端 API 串接）。
+Phase 0～7 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件、前端 API 串接）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已完整接上後端：`todoApi.ts` 封裝所有 API 呼叫，`App.tsx` 串接新增/切換/編輯/刪除/loading/error，已用瀏覽器手動整合測試（含重新整理驗證持久化、後端斷線驗證錯誤處理）全數通過。下一步進入 Phase 8（前端測試，可選）或直接跳到 Phase 9（整合與端對端驗證，其中部分項目已在 Phase 7 手動測試涵蓋）。
 
 ## 專案結構（規劃）
 ```
@@ -93,14 +93,16 @@ todo-list/
 
 > 註：`TodoList`/`TodoItem`/`AddTodoForm` 已接進 `App.tsx`：`App` 用 `useState<Todo[]>` 管理本地 todos 清單，`handleAdd`/`handleToggle`/`handleDelete`/`handleUpdate` 對應傳給三個元件。這是暫時的本地 state，尚未呼叫後端 API（那是 Phase 7 的範圍）。`src/api/types.ts` 已建立 `Todo` 型別定義（尚未有實際 fetch 邏輯）。`tsc -b --noEmit` 已驗證無型別錯誤，`vite build` 可正常打包。
 
-## Phase 7：前端 API 串接
-- [ ] 建立 API service 模組（封裝 fetch，統一處理 base URL 與錯誤）
-- [ ] 串接 `GET /api/todos`：頁面載入時抓取清單
-- [ ] 串接 `POST /api/todos`：新增後更新畫面
-- [ ] 串接 `PATCH /toggle`：切換完成狀態
-- [ ] 串接 `PUT /api/todos/{id}`：編輯儲存
-- [ ] 串接 `DELETE /api/todos/{id}`：刪除
-- [ ] Loading / Error 狀態處理（API 失敗時顯示提示，不讓畫面白屏）
+## Phase 7：前端 API 串接（已完成）
+- [x] 建立 API service 模組（`frontend/src/api/todoApi.ts`）：統一 `request<T>()` 封裝 fetch，base URL 讀 `VITE_API_BASE_URL`，非 2xx 回應解析後端 `{timestamp, status, error, message}` 格式並丟出自訂 `ApiError`（帶 `status`），204 回應回傳 `undefined`
+- [x] 串接 `GET /api/todos`：`App.tsx` 用 `useEffect` 在頁面載入時呼叫 `getTodos()` 填入 `todos` state
+- [x] 串接 `POST /api/todos`：`handleAdd` 呼叫 `createTodo`，成功後把後端回傳的完整 todo（含 id/createdAt）append 進畫面
+- [x] 串接 `PATCH /toggle`：`handleToggle` 呼叫 `toggleTodo`，用回傳結果替換該筆
+- [x] 串接 `PUT /api/todos/{id}`：`handleUpdate` 儲存。過程中修正一個設計問題：PUT 是整筆替換，原本只傳新 `title` 字串會漏掉 `description`/`completed` 導致型別不合、語意也不對（等於用 undefined 覆蓋掉這兩欄）。改成 `TodoItem` 编辑時把自己手上已有的 `todo.description`/`todo.completed` 一起透過 `onUpdate(id, title, description, completed)` 往上傳（`TodoItem` → `TodoList` → `App`），`App` 端直接組成 `TodoUpdateInput` 送出，不需要額外呼叫 `getTodo` 補資料，省一次來回
+- [x] 串接 `DELETE /api/todos/{id}`：`handleDelete` 呼叫後從畫面移除該筆
+- [x] Loading / Error 狀態處理：`isLoading` 控制初次載入畫面（顯示「載入中...」，不會白屏空畫面）；`error` 顯示紅字提示（新增/更新/刪除/載入各自有對應訊息），每次操作開始時先 `setError(null)` 清掉舊錯誤，避免舊錯誤一直卡著
+
+> 手動整合測試（`docker` MySQL 未啟動，改用本機 MySQL80 服務 + `local` profile 啟動後端、`npm run dev` 啟動前端，透過瀏覽器實測）：新增 → 顯示 → 勾選完成（打勾即 strikethrough，用 computed style 確認 `text-decoration-line-through` 有生效，畫面上因線很細不易用截圖肉眼辨識）→ 行內編輯（含編輯後 `completed` 狀態不會被覆蓋掉）→ 重新整理頁面資料仍在（驗證有寫進 MySQL）→ 刪除 → 空狀態正確顯示，全部通過。另外手動把後端 process 砍掉測試錯誤情境：新增失敗時畫面顯示「新增失敗」紅字且不會白屏，恢復後端後新增立即恢復正常、舊錯誤訊息也正確被蓋掉。
 
 ## Phase 8：前端測試（可選，視時間決定是否納入第一版）
 - [ ] 設定測試工具（Vitest + React Testing Library）
@@ -134,7 +136,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] 開始 Phase 7：建立 API service 模組，將前端串接後端 `/api/todos`
+- [ ] Phase 8（可選）：補前端測試（Vitest + React Testing Library），或直接跳到 Phase 9 整合驗證收尾
 
 ## 備註
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。

@@ -6,3 +6,12 @@ export interface Todo{
     createdAt: string,
     updatedAt: string,
 }
+
+export interface TodoInput {
+    title: string;
+    description?: string;
+}
+
+export interface TodoUpdateInput extends TodoInput {
+    completed: boolean;
+}

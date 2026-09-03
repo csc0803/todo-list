@@ -6,7 +6,7 @@ interface TodoListProps {
   todos: Todo[];
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
-  onUpdate: (id: number, title: string) => void;
+  onUpdate: (id: number, title: string, description: string, completed: boolean) => void;
 }
 
 function TodoList({ todos, onToggle, onDelete, onUpdate }: TodoListProps) {
