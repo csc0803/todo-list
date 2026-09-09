@@ -1,9 +1,9 @@
 # 專案進度 (PROGRESS)
 
-最後更新：2026-09-03
+最後更新：2026-09-09
 
 ## 目前狀態
-Phase 0～7 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件、前端 API 串接）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已完整接上後端：`todoApi.ts` 封裝所有 API 呼叫，`App.tsx` 串接新增/切換/編輯/刪除/loading/error，已用瀏覽器手動整合測試（含重新整理驗證持久化、後端斷線驗證錯誤處理）全數通過。下一步進入 Phase 8（前端測試，可選）或直接跳到 Phase 9（整合與端對端驗證，其中部分項目已在 Phase 7 手動測試涵蓋）。
+Phase 0～8 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件、前端 API 串接、前端測試）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已完整接上後端：`todoApi.ts` 封裝所有 API 呼叫，`App.tsx` 串接新增/切換/編輯/刪除/loading/error，已用瀏覽器手動整合測試（含重新整理驗證持久化、後端斷線驗證錯誤處理）全數通過。前端已補上 Vitest + React Testing Library，針對 `AddTodoForm`/`TodoItem` 共 7 個測試全過。下一步進入 Phase 9（整合與端對端驗證，其中部分項目已在 Phase 7 手動測試涵蓋）。
 
 ## 專案結構（規劃）
 ```
@@ -104,9 +104,12 @@ todo-list/
 
 > 手動整合測試（`docker` MySQL 未啟動，改用本機 MySQL80 服務 + `local` profile 啟動後端、`npm run dev` 啟動前端，透過瀏覽器實測）：新增 → 顯示 → 勾選完成（打勾即 strikethrough，用 computed style 確認 `text-decoration-line-through` 有生效，畫面上因線很細不易用截圖肉眼辨識）→ 行內編輯（含編輯後 `completed` 狀態不會被覆蓋掉）→ 重新整理頁面資料仍在（驗證有寫進 MySQL）→ 刪除 → 空狀態正確顯示，全部通過。另外手動把後端 process 砍掉測試錯誤情境：新增失敗時畫面顯示「新增失敗」紅字且不會白屏，恢復後端後新增立即恢復正常、舊錯誤訊息也正確被蓋掉。
 
-## Phase 8：前端測試（可選，視時間決定是否納入第一版）
-- [ ] 設定測試工具（Vitest + React Testing Library）
-- [ ] 針對關鍵元件（AddTodoForm、TodoItem）撰寫基本測試
+## Phase 8：前端測試（已完成）
+- [x] 設定測試工具：`vitest`、`@testing-library/react`、`@testing-library/jest-dom`、`@testing-library/user-event`、`jsdom`（devDependencies）。`vite.config.ts` 加上 `test`（`environment: 'jsdom'`、`setupFiles: './src/test/setup.ts'`），`package.json` 新增 `npm run test`（`vitest run`）/ `npm run test:watch`（`vitest`）。未開 `globals: true`，測試檔需自行 `import { describe, it, expect, vi } from 'vitest'`
+  - `src/test/setup.ts`：載入 `@testing-library/jest-dom/vitest`，並註冊 `afterEach(() => cleanup())`——RTL 的自動 cleanup 依賴偵測到全域 `afterEach`，沒開 `globals` 時不會自動生效，一開始漏寫導致多個測試間 DOM 沒清乾淨、`getByRole`/`getByText` 因為抓到前一個測試殘留的元素而噴 "Found multiple elements"，補上後修正
+- [x] 針對關鍵元件撰寫基本測試（`npm run test`：2 個檔案、7 個測試全過，`tsc -b --noEmit` 型別檢查也通過）。測試檔集中放在 `src/test/`（而非跟元件放同一層），用相對路徑 `import ... from '../components/xxx'` 匯入：
+  - `AddTodoForm.test.tsx`（2 個測試）：送出時把 title trim 後傳給 `onAdd` 並清空輸入框；title 為空或純空白時不呼叫 `onAdd`
+  - `TodoItem.test.tsx`（5 個測試）：點 checkbox 呼叫 `onToggle(id)`；點刪除按鈕呼叫 `onDelete(id)`；點標題進入編輯模式、儲存時把 trim 後的新 title 連同既有的 `description`/`completed` 一起傳給 `onUpdate`；取消編輯會還原成原本的 title、不呼叫 `onUpdate`；編輯後 title 為空或純空白時不儲存
 
 ## Phase 9：整合與端對端驗證
 - [ ] 同時啟動 MySQL（docker compose up）、後端（mvn spring-boot:run）、前端（npm run dev）
@@ -136,7 +139,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] Phase 8（可選）：補前端測試（Vitest + React Testing Library），或直接跳到 Phase 9 整合驗證收尾
+- [ ] Phase 9：整合與端對端驗證收尾
 
 ## 備註
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。
