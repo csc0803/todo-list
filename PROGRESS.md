@@ -3,7 +3,7 @@
 最後更新：2026-09-09
 
 ## 目前狀態
-Phase 0～8 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件、前端 API 串接、前端測試）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已完整接上後端：`todoApi.ts` 封裝所有 API 呼叫，`App.tsx` 串接新增/切換/編輯/刪除/loading/error，已用瀏覽器手動整合測試（含重新整理驗證持久化、後端斷線驗證錯誤處理）全數通過。前端已補上 Vitest + React Testing Library，針對 `AddTodoForm`/`TodoItem` 共 7 個測試全過。下一步進入 Phase 9（整合與端對端驗證，其中部分項目已在 Phase 7 手動測試涵蓋）。
+Phase 0～11 已完成（環境準備、後端骨架、資料層、API 層、後端測試、前端骨架、前端 UI 元件、前端 API 串接、前端測試、整合與端對端驗證、文件、容器化）。後端 CRUD API 已可用，Repository/Controller 層共 27 個測試 + `contextLoads` 全數通過（`mvn test` BUILD SUCCESS，28 個測試）。前端已完整接上後端並補上 Vitest + React Testing Library（7 個測試全過）。Phase 9 端對端驗證（curl API、CORS、Claude in Chrome 瀏覽器自動化跑完整 CRUD 流程）全數通過。Phase 10 補上根目錄 `README.md`。Phase 11 補上 `backend/Dockerfile`、`frontend/Dockerfile`（+ nginx）、擴充 `docker-compose.yml` 納入三個服務，`docker compose up -d --build` 一鍵啟動已實測通過（含瀏覽器端對端驗證）。第一版功能、文件、容器化皆已齊備，剩 Phase 12（進階功能）為 stretch，視需求再做。
 
 ## 專案結構（規劃）
 ```
@@ -111,22 +111,25 @@ todo-list/
   - `AddTodoForm.test.tsx`（2 個測試）：送出時把 title trim 後傳給 `onAdd` 並清空輸入框；title 為空或純空白時不呼叫 `onAdd`
   - `TodoItem.test.tsx`（5 個測試）：點 checkbox 呼叫 `onToggle(id)`；點刪除按鈕呼叫 `onDelete(id)`；點標題進入編輯模式、儲存時把 trim 後的新 title 連同既有的 `description`/`completed` 一起傳給 `onUpdate`；取消編輯會還原成原本的 title、不呼叫 `onUpdate`；編輯後 title 為空或純空白時不儲存
 
-## Phase 9：整合與端對端驗證
-- [ ] 同時啟動 MySQL（docker compose up）、後端（mvn spring-boot:run）、前端（npm run dev）
-- [ ] 手動測試主要流程：新增 → 顯示 → 切換完成 → 編輯 → 刪除
-- [ ] 確認重新整理頁面後資料仍保留在 MySQL 中（驗證持久化）
-- [ ] 檢查瀏覽器 console 無錯誤、CORS 正常
+## Phase 9：整合與端對端驗證（已完成）
+- [x] 同時啟動 MySQL、後端、前端：Docker Desktop 當下未啟動，改用本機 MySQL80 服務（`Get-Service MySQL80` → Running）+ `local` profile 啟動後端（`./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local`，背景執行，`Started BackendApplication in 4.699 seconds`，連上 `jdbc:mysql://localhost:3306/tododb`）、`npm run dev` 啟動前端（`http://localhost:5173`）
+- [x] 後端 API 用 curl 完整跑過一輪 CRUD（`POST` → `GET all` → `PATCH toggle` → `PUT` → `GET by id` → `DELETE` → `GET all` 確認變空），`updatedAt` 有隨每次寫入更新、`createdAt` 不變，行為符合預期
+- [x] CORS 驗證：對 `http://localhost:8080/api/todos` 送 preflight `OPTIONS`（`Origin: http://localhost:5173`），回應 `Access-Control-Allow-Origin: http://localhost:5173`、`Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE`，設定正確
+- [x] 用 Claude in Chrome 瀏覽器自動化跑過前端主要流程：新增（「買牛奶」）→ 畫面顯示 → 勾選完成（checkbox 打勾）→ 點標題進入行內編輯、改成「買豆漿」儲存（`completed` 狀態沒被編輯覆蓋掉，還是打勾狀態）→ **重新整理頁面**確認「買豆漿」+ 打勾狀態都還在（驗證有寫進 MySQL、非僅前端 state）→ 刪除 → 回到「目前沒有待辦事項」空狀態，全部符合預期
+- [x] 檢查瀏覽器 console：全程無 error/exception，只有 Vite HMR 連線訊息與 React DevTools 提示（`onlyErrors: true` 查詢回傳「No console errors or exceptions found」），CORS 正常無警告
 
-## Phase 10：文件
-- [ ] 撰寫 README.md：專案簡介、技術棧、啟動步驟（含 docker-compose、後端、前端三部分）
-- [ ] 記錄環境變數需求（`.env.example`）
-- [ ] 記錄 API 規格（可用簡易表格或 Postman collection）
+## Phase 10：文件（已完成）
+- [x] 撰寫根目錄 `README.md`：專案簡介、技術棧、專案結構、環境需求、啟動步驟（MySQL 用 Docker Compose 或本機二選一、後端依 profile 對應、前端）
+- [x] 記錄環境變數需求：整理成表格，涵蓋 `frontend/.env` 的 `VITE_API_BASE_URL` 與 `backend` `local` profile 需要的 `spring.datasource.password`
+- [x] 記錄 API 規格：表格列出 6 個 endpoint（method/path/說明/成功回應），附 `Todo` 物件範例、統一錯誤回應格式範例、驗證規則說明，並指向 Swagger UI（`http://localhost:8080/swagger-ui/index.html`）當完整互動式文件
+- [x] 順帶補上「測試」章節（`mvn test` / `npm run test` 指令）與「CORS」說明
 
-## Phase 11（Stretch）：容器化與一鍵啟動
-- [ ] 撰寫 backend Dockerfile（multi-stage build）
-- [ ] 撰寫 frontend Dockerfile（build + nginx 靜態服務，或 vite preview）
-- [ ] 擴充 docker-compose.yml，納入 backend + frontend + MySQL 三個服務
-- [ ] 驗證 `docker compose up` 即可讓整個系統可用
+## Phase 11（Stretch）：容器化與一鍵啟動（已完成）
+- [x] `backend/Dockerfile`：multi-stage，build stage 用 `maven:3.9-eclipse-temurin-21` 跑 `mvn package -DskipTests`（先 `dependency:go-offline` 再 `COPY src`，讓 layer cache 對只改程式碼的情況有效），run stage 用 `eclipse-temurin:21-jre-alpine`，`COPY --from=build /app/target/*.jar app.jar`（用萬用字元避免寫死版本號）。另加 `.dockerignore`（排除 `target/`、`.idea/`、`.git/` 等）
+- [x] `frontend/Dockerfile`：multi-stage，build stage 用 `node:22-alpine` 跑 `npm ci && npm run build`，`VITE_API_BASE_URL` 透過 build `ARG`/`ENV` 傳入（Vite 環境變數是 build time 內嵌，不是 runtime），serve stage 用 `nginx:1.27-alpine` 搭配自寫的 `frontend/nginx.conf`（`try_files $uri $uri/ /index.html`，支援 SPA client-side routing）。另加 `.dockerignore`（排除 `node_modules/`、`dist/`、`.env` 等）
+- [x] 擴充 `docker-compose.yml`：新增 `backend`（`depends_on: mysql: condition: service_healthy`，透過環境變數 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 覆蓋連線設定，指向 compose 內部網路的 `mysql:3306`，不需要額外的 profile 檔）、`frontend`（`depends_on: backend`，`5173:80`，build arg 傳入 `VITE_API_BASE_URL=http://localhost:8080`）
+- [x] 驗證 `docker compose up -d --build`：三個容器（`todo-mysql`/`todo-backend`/`todo-frontend`）皆成功啟動且 healthy，後端 log 確認連上 `jdbc:mysql://mysql:3306/tododb`（Hibernate `validate` 通過）。用 curl 確認 `localhost:8080/api/todos` 與 `localhost:5173/` 皆正常回應，並用 Claude in Chrome 實際跑過一次新增/刪除（驗證前端容器能透過瀏覽器成功打到後端容器的 API，CORS 正常），console 無錯誤
+  - 過程中發現一個環境問題（非程式碼 bug）：驗證 `localhost:5173` 時一度抓到舊的 `npm run dev` 殘留 process（`TaskStop` 只殺掉了 wrapper shell，底下的 `node` process 沒被清乾淨，繼續綁在 `[::1]:5173`），導致 curl 走 IPv6 loopback 連到舊 dev server 而非 Docker 轉發的 container，畫面上看到的是帶 `@react-refresh`/`@vite/client` 的 dev 版 HTML。用 `netstat -ano` 抓到殘留 PID 後手動 `Stop-Process` 才排除，之後重新驗證都正確導向 nginx 容器裡的 production build
 
 ## Phase 12（Stretch）：進階功能
 - [ ] 截止日期（due date）與逾期提示
@@ -139,7 +142,7 @@ todo-list/
 ---
 
 ## 下一步（建議立即執行）
-- [ ] Phase 9：整合與端對端驗證收尾
+- [ ] 第一版核心功能、文件、容器化皆已完成，可視需求評估 Phase 12（進階功能：截止日期、優先順序、標籤、搜尋篩選、排序、分頁），或直接視為專案收尾
 
 ## 備註
 - 正式環境不應使用 `ddl-auto=update`，建議之後導入 Flyway/Liquibase 做 schema migration（已列入 Phase 2 備註，暫不影響第一版開發）。
